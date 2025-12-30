@@ -13,8 +13,8 @@ class Track:
     position: int
     track_name: str
     artist: str
-    album: str | None = None
     liked: int
+    album: str | None = None
 
 _FEAT_PATTERN = re.compile(r"\s*\(feat\..*?\)|\s*\[feat\..*?\]", re.IGNORECASE)
 def normalize_text(s: str) -> str:
@@ -49,7 +49,7 @@ def load_tracks_from_csv(path: Path, source: str = "spotify_export") -> list[Tra
         reader = csv.DictReader(f)
         for row in reader:
             playlist = normalize_text(row.get("playlist", "") or "")
-            position = row.get("playlist", "") or ""
+            position = row.get("position", "") or ""
             track_name = normalize_text(row.get("track_name", "") or "")
             artist = normalize_text(row.get("artist", "") or "")
             album = normalize_text(row.get("album", "") or "") or None
@@ -95,15 +95,19 @@ def dedupe_tracks(tracks: list[Track]) -> list[Track]:
 
 
 def ingest(raw_dir: Path = DATA_RAW, processed_dir: Path = DATA_PROCESSED) -> Path:
+    print(f"Yay! Ingest starting!")
     all_tracks: list[Track] = []
 
     for path in raw_dir.glob("*"):
+        print(f"Reading {path}")
         if path.suffix.lower() == ".json":
             all_tracks.extend(load_tracks_from_json(path))
         elif path.suffix.lower() == ".csv":
             all_tracks.extend(load_tracks_from_csv(path))
 
     all_tracks = dedupe_tracks(all_tracks)
+    
+    print(f"Ingested {len(all_tracks)} tracks")
 
     out_path = processed_dir / "tracks.json"
     save_tracks_json(all_tracks, out_path)
